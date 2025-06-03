@@ -3,16 +3,58 @@
 <head>
   <meta charset="UTF-8" />
   <title>Estudiantes UMG</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    input, button {
+      margin: 5px;
+      padding: 10px;
+    }
+    form, .card {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #fff;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
 <body>
   <h1>Web Service de Estudiantes UMG</h1>
 
+  <!-- Formulario para agregar estudiante -->
   <form id="formAgregar">
     <input type="text" id="nombre" placeholder="Nombre" required />
     <input type="number" id="nota" placeholder="Nota" required />
+    <input type="text" id="curso" placeholder="Curso" required />
+    <input type="text" id="carrera" placeholder="Carrera" required />
     <button type="submit">Agregar Estudiante</button>
+    <button type="button" onclick="descargar()">Descargar Lista</button>
   </form>
 
+  <!-- Formulario de búsqueda -->
+  <h2>Buscar Estudiante</h2>
+  <input type="text" id="buscar" placeholder="Nombre o nota" />
+  <button onclick="buscarEstudiante()">Buscar</button>
+  <ul id="resultado"></ul>
+
+  <!-- Lista de estudiantes -->
   <h2>Lista de Estudiantes</h2>
   <ul id="lista"></ul>
 
@@ -26,8 +68,12 @@
           lista.innerHTML = '';
           data.forEach(e => {
             const li = document.createElement('li');
-            li.innerHTML = `${e.id} - ${e.nombre} - ${e.nota}
-              <button onclick="eliminar(${e.id})">Eliminar</button>`;
+            li.innerHTML = `
+              <strong>${e.nombre}</strong> (${e.carrera} - ${e.curso})<br>
+              Nota: ${e.nota}<br>
+              <button onclick="eliminar(${e.id})">Eliminar</button>
+              <button onclick="modificar(${e.id}, '${e.nombre}', ${e.nota}, '${e.curso}', '${e.carrera}')">Editar</button>
+            `;
             lista.appendChild(li);
           });
         });
@@ -38,14 +84,60 @@
         .then(() => cargarEstudiantes());
     }
 
+    function modificar(id, nombre, nota, curso, carrera) {
+      const nuevoNombre = prompt("Nuevo nombre:", nombre);
+      const nuevaNota = parseInt(prompt("Nueva nota:", nota));
+      const nuevoCurso = prompt("Nuevo curso:", curso);
+      const nuevaCarrera = prompt("Nueva carrera:", carrera);
+
+      if (nuevoNombre && nuevaNota && nuevoCurso && nuevaCarrera) {
+        fetch(`/estudiantes/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre: nuevoNombre,
+            nota: nuevaNota,
+            curso: nuevoCurso,
+            carrera: nuevaCarrera
+          })
+        }).then(() => cargarEstudiantes());
+      }
+    }
+
+    function buscarEstudiante() {
+      const filtro = document.getElementById("buscar").value.toLowerCase();
+      fetch('/estudiantes')
+        .then(res => res.json())
+        .then(data => {
+          const resultados = data.filter(e =>
+            e.nombre.toLowerCase().includes(filtro) ||
+            e.nota.toString() === filtro
+          );
+          const resultado = document.getElementById("resultado");
+          resultado.innerHTML = '';
+          resultados.forEach(e => {
+            const li = document.createElement('li');
+            li.innerHTML = `${e.nombre} (${e.carrera} - ${e.curso}) - Nota: ${e.nota}`;
+            resultado.appendChild(li);
+          });
+        });
+    }
+
+    function descargar() {
+      window.location.href = "/descargar";
+    }
+
     document.getElementById('formAgregar').addEventListener('submit', e => {
       e.preventDefault();
       const nombre = document.getElementById('nombre').value;
       const nota = parseInt(document.getElementById('nota').value);
+      const curso = document.getElementById('curso').value;
+      const carrera = document.getElementById('carrera').value;
+
       fetch('/estudiantes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, nota })
+        body: JSON.stringify({ nombre, nota, curso, carrera })
       })
       .then(() => {
         cargarEstudiantes();
@@ -57,4 +149,3 @@
   </script>
 </body>
 </html>
-node index.js

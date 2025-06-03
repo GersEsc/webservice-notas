@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Consulta de Estudiantes</title>
+</head>
+<body>
+  <h1>Consulta de Estudiantes desde otro archivo HTML</h1>
+  <ul id="listaConsulta"></ul>
+
+  <script>
+    fetch('/estudiantes')
+      .then(res => res.json())
+      .then(data => {
+        const ul = document.getElementById('listaConsulta');
+        data.forEach(e => {
+          const li = document.createElement('li');
+          li.textContent = `${e.nombre} (${e.carrera} - ${e.curso}) - Nota: ${e.nota}`;
+          ul.appendChild(li);
+        });
+      });
+  </script>
+</body>
+</html>
