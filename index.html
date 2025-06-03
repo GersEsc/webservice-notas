@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Estudiantes UMG</title>
+</head>
+<body>
+  <h1>Web Service de Estudiantes UMG</h1>
+
+  <form id="formAgregar">
+    <input type="text" id="nombre" placeholder="Nombre" required />
+    <input type="number" id="nota" placeholder="Nota" required />
+    <button type="submit">Agregar Estudiante</button>
+  </form>
+
+  <h2>Lista de Estudiantes</h2>
+  <ul id="lista"></ul>
+
+  <script>
+    const lista = document.getElementById("lista");
+
+    function cargarEstudiantes() {
+      fetch('/estudiantes')
+        .then(res => res.json())
+        .then(data => {
+          lista.innerHTML = '';
+          data.forEach(e => {
+            const li = document.createElement('li');
+            li.innerHTML = `${e.id} - ${e.nombre} - ${e.nota}
+              <button onclick="eliminar(${e.id})">Eliminar</button>`;
+            lista.appendChild(li);
+          });
+        });
+    }
+
+    function eliminar(id) {
+      fetch(`/estudiantes/${id}`, { method: 'DELETE' })
+        .then(() => cargarEstudiantes());
+    }
+
+    document.getElementById('formAgregar').addEventListener('submit', e => {
+      e.preventDefault();
+      const nombre = document.getElementById('nombre').value;
+      const nota = parseInt(document.getElementById('nota').value);
+      fetch('/estudiantes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, nota })
+      })
+      .then(() => {
+        cargarEstudiantes();
+        e.target.reset();
+      });
+    });
+
+    cargarEstudiantes();
+  </script>
+</body>
+</html>
+node index.js
