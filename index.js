@@ -9,6 +9,11 @@ let estudiantes = [
   { id: 2, nombre: 'Ana', nota: 92 }
 ];
 
+// Ruta raíz
+app.get('/', (req, res) => {
+  res.send('¡Bienvenido al Web Service de Estudiantes UMG!');
+});
+
 // Ver todos los estudiantes
 app.get('/estudiantes', (req, res) => {
   res.json(estudiantes);
