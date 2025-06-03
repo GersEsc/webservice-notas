@@ -28,12 +28,14 @@ app.get('/estudiantes/:id', (req, res) => {
 });
 
 // Agregar estudiante
+app.use(express.json());
 app.post('/estudiantes', (req, res) => {
   const nuevo = req.body;
-  nuevo.id = estudiantes.length + 1;
+  nuevo.id = estudiantes.length + 1;  // 🚨 Aquí revienta si `nuevo` es undefined
   estudiantes.push(nuevo);
   res.status(201).json(nuevo);
 });
+
 
 // Actualizar estudiante
 app.put('/estudiantes/:id', (req, res) => {
