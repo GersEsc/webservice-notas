@@ -8,14 +8,28 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static('public'));
 
-let estudiantes = [
-  { id: 1, nombre: 'Luis', nota: 85, curso: 'Matemática', carrera: 'Ingeniería' },
-  { id: 2, nombre: 'Ana', nota: 92, curso: 'Programación', carrera: 'Informática' }
-];
+// Carga datos persistentes si existen
+const archivoJSON = path.join(__dirname, 'public/estudiantes.json');
+let estudiantes = [];
 
-// Ruta raíz
+if (fs.existsSync(archivoJSON)) {
+  estudiantes = JSON.parse(fs.readFileSync(archivoJSON, 'utf8'));
+} else {
+  estudiantes = [
+    { id: 1, nombre: 'Luis', nota: 85, curso: 'Matemática', carrera: 'Ingeniería' },
+    { id: 2, nombre: 'Ana', nota: 92, curso: 'Programación', carrera: 'Informática' }
+  ];
+  fs.writeFileSync(archivoJSON, JSON.stringify(estudiantes, null, 2));
+}
+
+// Página principal
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+// Página secundaria (para demostrar consumo desde otra web)
+app.get('/consulta', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/consulta.html'));
 });
 
 // Obtener todos los estudiantes
@@ -23,7 +37,7 @@ app.get('/estudiantes', (req, res) => {
   res.json(estudiantes);
 });
 
-// Obtener estudiante por ID
+// Obtener un estudiante por ID
 app.get('/estudiantes/:id', (req, res) => {
   const id = parseInt(req.params.id);
   const estudiante = estudiantes.find(e => e.id === id);
@@ -35,7 +49,7 @@ app.get('/estudiantes/:id', (req, res) => {
   res.json(estudiante);
 });
 
-// Agregar estudiante nuevo
+// Crear nuevo estudiante
 app.post('/estudiantes', (req, res) => {
   const { nombre, nota, curso, carrera } = req.body;
 
@@ -52,10 +66,11 @@ app.post('/estudiantes', (req, res) => {
   };
 
   estudiantes.push(nuevoEstudiante);
+  fs.writeFileSync(archivoJSON, JSON.stringify(estudiantes, null, 2));
   res.status(201).json(nuevoEstudiante);
 });
 
-// Actualizar un estudiante existente
+// Modificar estudiante existente
 app.put('/estudiantes/:id', (req, res) => {
   const id = parseInt(req.params.id);
   const index = estudiantes.findIndex(e => e.id === id);
@@ -71,6 +86,7 @@ app.put('/estudiantes/:id', (req, res) => {
   }
 
   estudiantes[index] = { id, nombre, nota, curso, carrera };
+  fs.writeFileSync(archivoJSON, JSON.stringify(estudiantes, null, 2));
   res.json(estudiantes[index]);
 });
 
@@ -84,21 +100,31 @@ app.delete('/estudiantes/:id', (req, res) => {
   }
 
   estudiantes = estudiantes.filter(e => e.id !== id);
+  fs.writeFileSync(archivoJSON, JSON.stringify(estudiantes, null, 2));
   res.json({ mensaje: 'Estudiante eliminado correctamente' });
 });
 
-// Descargar estudiantes como archivo JSON
+// Descargar lista como archivo JSON
 app.get('/descargar', (req, res) => {
-  const ruta = path.join(__dirname, 'public/estudiantes.json');
+  const ruta = path.join(__dirname, 'estudiantes_temp.json');
+
   try {
     fs.writeFileSync(ruta, JSON.stringify(estudiantes, null, 2));
-    res.download(ruta);
+    res.download(ruta, 'estudiantes.json', err => {
+      if (err) {
+        console.error("Error en la descarga:", err);
+        res.status(500).send("Error al descargar archivo.");
+      } else {
+        fs.unlinkSync(ruta); // Eliminar temporal después de descarga
+      }
+    });
   } catch (err) {
+    console.error("Error al generar archivo:", err);
     res.status(500).json({ mensaje: 'Error al generar archivo' });
   }
 });
 
-// Ruta para buscar estudiantes por carrera
+// Buscar por carrera
 app.get('/buscar/carrera/:carrera', (req, res) => {
   const carrera = req.params.carrera.toLowerCase();
   const encontrados = estudiantes.filter(e => e.carrera.toLowerCase() === carrera);
@@ -108,7 +134,7 @@ app.get('/buscar/carrera/:carrera', (req, res) => {
     : res.status(404).json({ mensaje: 'No se encontraron estudiantes en esa carrera' });
 });
 
-// Ruta para buscar por nota mínima
+// Buscar por nota mínima
 app.get('/buscar/nota/:minima', (req, res) => {
   const notaMinima = parseFloat(req.params.minima);
 
@@ -123,7 +149,7 @@ app.get('/buscar/nota/:minima', (req, res) => {
     : res.status(404).json({ mensaje: 'No se encontraron estudiantes con nota suficiente' });
 });
 
-// Ruta para obtener estadísticas simples
+// Estadísticas básicas
 app.get('/estadisticas', (req, res) => {
   if (estudiantes.length === 0) {
     return res.status(404).json({ mensaje: 'No hay estudiantes para calcular estadísticas' });
@@ -141,6 +167,7 @@ app.get('/estadisticas', (req, res) => {
   });
 });
 
+// Iniciar servidor
 app.listen(port, () => {
   console.log(`Servicio corriendo en http://localhost:${port}`);
 });

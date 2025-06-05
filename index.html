@@ -33,6 +33,9 @@
       border-radius: 6px;
       box-shadow: 0 0 4px rgba(0,0,0,0.1);
     }
+    .separador {
+      margin-top: 30px;
+    }
   </style>
 </head>
 <body>
@@ -41,7 +44,7 @@
   <!-- Formulario para agregar estudiante -->
   <form id="formAgregar">
     <input type="text" id="nombre" placeholder="Nombre" required />
-    <input type="number" id="nota" placeholder="Nota" required />
+    <input type="number" id="nota" placeholder="Nota" min="0" max="100" required />
     <input type="text" id="curso" placeholder="Curso" required />
     <input type="text" id="carrera" placeholder="Carrera" required />
     <button type="submit">Agregar Estudiante</button>
@@ -49,14 +52,18 @@
   </form>
 
   <!-- Formulario de búsqueda -->
-  <h2>Buscar Estudiante</h2>
-  <input type="text" id="buscar" placeholder="Nombre o nota" />
-  <button onclick="buscarEstudiante()">Buscar</button>
-  <ul id="resultado"></ul>
+  <div class="separador">
+    <h2>Buscar Estudiante</h2>
+    <input type="text" id="buscar" placeholder="Nombre o nota" />
+    <button onclick="buscarEstudiante()">Buscar</button>
+    <ul id="resultado"></ul>
+  </div>
 
   <!-- Lista de estudiantes -->
-  <h2>Lista de Estudiantes</h2>
-  <ul id="lista"></ul>
+  <div class="separador">
+    <h2>Lista de Estudiantes</h2>
+    <ul id="lista"></ul>
+  </div>
 
   <script>
     const lista = document.getElementById("lista");
@@ -72,7 +79,7 @@
               <strong>${e.nombre}</strong> (${e.carrera} - ${e.curso})<br>
               Nota: ${e.nota}<br>
               <button onclick="eliminar(${e.id})">Eliminar</button>
-              <button onclick="modificar(${e.id}, '${e.nombre}', ${e.nota}, '${e.curso}', '${e.carrera}')">Editar</button>
+              <button onclick='modificar(${e.id}, ${JSON.stringify(e)})'>Editar</button>
             `;
             lista.appendChild(li);
           });
@@ -80,46 +87,58 @@
     }
 
     function eliminar(id) {
-      fetch(`/estudiantes/${id}`, { method: 'DELETE' })
-        .then(() => cargarEstudiantes());
+      if (confirm("¿Estás seguro de que deseas eliminar este estudiante?")) {
+        fetch(`/estudiantes/${id}`, { method: 'DELETE' })
+          .then(() => cargarEstudiantes());
+      }
     }
 
-    function modificar(id, nombre, nota, curso, carrera) {
-      const nuevoNombre = prompt("Nuevo nombre:", nombre);
-      const nuevaNota = parseInt(prompt("Nueva nota:", nota));
-      const nuevoCurso = prompt("Nuevo curso:", curso);
-      const nuevaCarrera = prompt("Nueva carrera:", carrera);
+    function modificar(id, datos) {
+      const nuevoNombre = prompt("Nuevo nombre:", datos.nombre) || datos.nombre;
+      const nuevaNota = parseInt(prompt("Nueva nota:", datos.nota)) || datos.nota;
+      const nuevoCurso = prompt("Nuevo curso:", datos.curso) || datos.curso;
+      const nuevaCarrera = prompt("Nueva carrera:", datos.carrera) || datos.carrera;
 
-      if (nuevoNombre && nuevaNota && nuevoCurso && nuevaCarrera) {
-        fetch(`/estudiantes/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nombre: nuevoNombre,
-            nota: nuevaNota,
-            curso: nuevoCurso,
-            carrera: nuevaCarrera
-          })
-        }).then(() => cargarEstudiantes());
+      if (isNaN(nuevaNota) || nuevaNota < 0 || nuevaNota > 100) {
+        alert("La nota debe ser un número entre 0 y 100");
+        return;
       }
+
+      fetch(`/estudiantes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: nuevoNombre,
+          nota: nuevaNota,
+          curso: nuevoCurso,
+          carrera: nuevaCarrera
+        })
+      }).then(() => cargarEstudiantes());
     }
 
     function buscarEstudiante() {
       const filtro = document.getElementById("buscar").value.toLowerCase();
+      const resultado = document.getElementById("resultado");
+
       fetch('/estudiantes')
         .then(res => res.json())
         .then(data => {
+          resultado.innerHTML = '';
+
           const resultados = data.filter(e =>
             e.nombre.toLowerCase().includes(filtro) ||
             e.nota.toString() === filtro
           );
-          const resultado = document.getElementById("resultado");
-          resultado.innerHTML = '';
-          resultados.forEach(e => {
-            const li = document.createElement('li');
-            li.innerHTML = `${e.nombre} (${e.carrera} - ${e.curso}) - Nota: ${e.nota}`;
-            resultado.appendChild(li);
-          });
+
+          if (resultados.length === 0) {
+            resultado.innerHTML = '<li>No se encontraron coincidencias</li>';
+          } else {
+            resultados.forEach(e => {
+              const li = document.createElement('li');
+              li.innerHTML = `${e.nombre} (${e.carrera} - ${e.curso}) - Nota: ${e.nota}`;
+              resultado.appendChild(li);
+            });
+          }
         });
     }
 
@@ -134,6 +153,11 @@
       const curso = document.getElementById('curso').value;
       const carrera = document.getElementById('carrera').value;
 
+      if (isNaN(nota) || nota < 0 || nota > 100) {
+        alert("La nota debe estar entre 0 y 100");
+        return;
+      }
+
       fetch('/estudiantes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -145,7 +169,9 @@
       });
     });
 
+    // Cargar lista al iniciar
     cargarEstudiantes();
   </script>
 </body>
 </html>
+
