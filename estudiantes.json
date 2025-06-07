@@ -12,5 +12,19 @@
     "nota": 92,
     "curso": "Programación",
     "carrera": "Informática"
+  },
+  {
+    "id": 3,
+    "nombre": "gerson",
+    "nota": 45,
+    "curso": "Matemática",
+    "carrera": "Sistemas"
+  },
+  {
+    "id": 4,
+    "nombre": "Gerson",
+    "nota": 61,
+    "curso": "programacion",
+    "carrera": "Sistemas"
   }
 ]

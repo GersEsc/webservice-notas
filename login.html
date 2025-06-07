@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login con Google</title>
+  <meta name="google-signin-client_id" content="218221474227-43emh6el5u2j1vfmf82udjgm1uq6q5v8.apps.googleusercontent.com" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    #g_id_onload, .g_id_signin {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Iniciar Sesión</h1>
+
+  <div id="g_id_onload"
+       data-client_id="218221474227-43emh6el5u2j1vfmf82udjgm1uq6q5v8.apps.googleusercontent.com"
+       data-context="signin"
+       data-callback="handleCredentialResponse"
+       data-auto_prompt="false">
+  </div>
+
+  <div class="g_id_signin"
+       data-type="standard"
+       data-shape="rectangular"
+       data-theme="outline"
+       data-text="signin_with"
+       data-size="large"
+       data-logo_alignment="left">
+  </div>
+
+  <script>
+    function handleCredentialResponse(response) {
+      const token = response.credential;
+
+      // Enviar token al backend para verificar
+      fetch("/verify-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Token inválido");
+        return res.json();
+      })
+      .then(data => {
+        sessionStorage.setItem("usuario", JSON.stringify(data.usuario));
+        window.location.href = "index.html"; // Página principal después de login
+      })
+      .catch(err => {
+        alert("No se pudo verificar tu cuenta con Google.");
+        console.error(err);
+      });
+    }
+  </script>
+</body>
+</html>

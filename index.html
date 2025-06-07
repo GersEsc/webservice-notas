@@ -36,10 +36,20 @@
     .separador {
       margin-top: 30px;
     }
+    .logout-btn {
+      background-color: #d9534f;
+      color: white;
+      border: none;
+      cursor: pointer;
+      float: right;
+    }
   </style>
 </head>
 <body>
-  <h1>Web Service de Estudiantes UMG</h1>
+  <h1>
+    Web Service de Estudiantes UMG 
+    <button class="logout-btn" onclick="cerrarSesion()">Cerrar Sesión</button>
+  </h1>
 
   <!-- Formulario para agregar estudiante -->
   <form id="formAgregar">
@@ -55,7 +65,7 @@
   <div class="separador">
     <h2>Buscar Estudiante</h2>
     <input type="text" id="buscar" placeholder="Nombre o nota" />
-    <button onclick="buscarEstudiante()">Buscar</button>
+    <button type="button" onclick="buscarEstudiante()">Buscar</button>
     <ul id="resultado"></ul>
   </div>
 
@@ -66,6 +76,14 @@
   </div>
 
   <script>
+    // Verifica si hay usuario logueado en sessionStorage
+    const usuario = sessionStorage.getItem("usuario");
+    if (!usuario) {
+      // Redirige a login.html solo si existe ese archivo en la ruta pública
+      // Si no tienes login.html, cambia la ruta o crea ese archivo
+      window.location.href = "login.html";
+    }
+
     const lista = document.getElementById("lista");
 
     function cargarEstudiantes() {
@@ -83,19 +101,25 @@
             `;
             lista.appendChild(li);
           });
+        })
+        .catch(err => {
+          console.error('Error al cargar estudiantes:', err);
+          lista.innerHTML = '<li>Error al cargar estudiantes</li>';
         });
     }
 
     function eliminar(id) {
       if (confirm("¿Estás seguro de que deseas eliminar este estudiante?")) {
         fetch(`/estudiantes/${id}`, { method: 'DELETE' })
-          .then(() => cargarEstudiantes());
+          .then(() => cargarEstudiantes())
+          .catch(err => alert('Error al eliminar estudiante: ' + err));
       }
     }
 
     function modificar(id, datos) {
       const nuevoNombre = prompt("Nuevo nombre:", datos.nombre) || datos.nombre;
-      const nuevaNota = parseInt(prompt("Nueva nota:", datos.nota)) || datos.nota;
+      const nuevaNotaInput = prompt("Nueva nota:", datos.nota);
+      const nuevaNota = nuevaNotaInput !== null && nuevaNotaInput !== '' ? parseInt(nuevaNotaInput) : datos.nota;
       const nuevoCurso = prompt("Nuevo curso:", datos.curso) || datos.curso;
       const nuevaCarrera = prompt("Nueva carrera:", datos.carrera) || datos.carrera;
 
@@ -113,7 +137,9 @@
           curso: nuevoCurso,
           carrera: nuevaCarrera
         })
-      }).then(() => cargarEstudiantes());
+      })
+      .then(() => cargarEstudiantes())
+      .catch(err => alert('Error al modificar estudiante: ' + err));
     }
 
     function buscarEstudiante() {
@@ -139,6 +165,10 @@
               resultado.appendChild(li);
             });
           }
+        })
+        .catch(err => {
+          console.error('Error en búsqueda:', err);
+          resultado.innerHTML = '<li>Error en la búsqueda</li>';
         });
     }
 
@@ -146,12 +176,23 @@
       window.location.href = "/descargar";
     }
 
+    function cerrarSesion() {
+      sessionStorage.removeItem("usuario");
+      // Redirige a login o a la ruta principal, según tengas configurado
+      window.location.href = "login.html";
+    }
+
     document.getElementById('formAgregar').addEventListener('submit', e => {
       e.preventDefault();
-      const nombre = document.getElementById('nombre').value;
+      const nombre = document.getElementById('nombre').value.trim();
       const nota = parseInt(document.getElementById('nota').value);
-      const curso = document.getElementById('curso').value;
-      const carrera = document.getElementById('carrera').value;
+      const curso = document.getElementById('curso').value.trim();
+      const carrera = document.getElementById('carrera').value.trim();
+
+      if (nombre === "" || curso === "" || carrera === "") {
+        alert("Por favor, complete todos los campos");
+        return;
+      }
 
       if (isNaN(nota) || nota < 0 || nota > 100) {
         alert("La nota debe estar entre 0 y 100");
@@ -166,7 +207,8 @@
       .then(() => {
         cargarEstudiantes();
         e.target.reset();
-      });
+      })
+      .catch(err => alert('Error al agregar estudiante: ' + err));
     });
 
     // Cargar lista al iniciar
@@ -174,4 +216,3 @@
   </script>
 </body>
 </html>
-
